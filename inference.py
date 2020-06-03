@@ -35,7 +35,7 @@ class Network:
 
 
 
-    def load_model(self, model, device,  cpu_extension):
+    def load_model(self, model, device,  cpu_extension, request_id):
         '''
         Load the model given IR files.
         Defaults to CPU as device for use in the workspace.
@@ -86,25 +86,24 @@ class Network:
         return self.network.inputs[self.input_blob].shape
 
 
-    def async_inference(self, image):
+    def async_inference(self, image, request_id):
         '''
         Makes an asynchronous inference request, given an input image.
         '''
-        self.exec_network.start_async(request_id=0, 
-            inputs={self.input_blob: image})
+        self.exec_network.start_async(request_id=request_id, inputs={self.input_blob: image})
         return
 
 
-    def wait(self):
+    def wait(self,request_id):
         '''
         Checks the status of the inference request.
         '''
-        status = self.exec_network.requests[0].wait(-1)
+        status = self.exec_network.requests[request_id].wait(-1)
         return status
 
 
-    def get_output(self):
+    def get_output(self, request_id):
         '''
         Returns a list of the results for the output layer of the network.
         '''
-        return self.exec_network.requests[0].outputs[self.output_blob]
+        return self.exec_network.requests[request_id].outputs[self.output_blob]

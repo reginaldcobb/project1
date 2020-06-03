@@ -169,6 +169,9 @@ def main():
 
     args = build_argparser().parse_args()
 
+    # Initialize value for request ID
+    request_id = 0
+
     # Flag for the input image
     single_image_mode = False
 
@@ -189,30 +192,28 @@ def main():
 
     # Check for Video, Image or other imputs
     if args.input == 'CAM':
-        log.error("ERROR! CAM input source not supported")
-        log.error("Exiting ...")
-        exit(1)
+        input_device = 0 # Setting to zero for cv2 will read from the webcam connected to the computer
 
     # Checks for video file
     elif (args.input.endswith('.jpg') or args.input.endswith('.bmp')) and (os.path.isfile(args.input)):
         single_image_mode = True
-        log.error("Processing Single Image")
+        input_device = args.input
 
     # Checks for video file
     elif (os.path.isfile(args.input)):
-        input_stream = args.input
+        input_device  = args.input
 
     else:        
-        log.error("ERROR! Unable to open input source listed below")
+        log.error("ERROR! Unable to open requested input source ")
         log.error("Exiting ...")
         exit(1)
 
-    infer_network.load_model(args.model, args.device, args.cpu_extension)
+    infer_network.load_model(args.model, args.device, args.cpu_extension, request_id)
     net_input_shape = infer_network.get_input_shape()
 
     # Get and open video capture
-    cap = cv2.VideoCapture(args.input)
-    cap.open(args.input)
+    cap = cv2.VideoCapture(input_device)
+    cap.open(input_device)
 
     global initial_w, initial_h, prob_threshold
 
@@ -242,12 +243,12 @@ def main():
         inf_start = time.time()
 
         # Perform inference on the frame
-        infer_network.async_inference(p_frame)
+        infer_network.async_inference(p_frame,request_id)
 
         # Get the output of inference
-        if infer_network.wait() == 0:
+        if infer_network.wait(request_id) == 0:
             det_time = time.time() - inf_start
-            result = infer_network.get_output()
+            result = infer_network.get_output(request_id)
 
             # if first person, then start the timer
             if timer_started == False:
